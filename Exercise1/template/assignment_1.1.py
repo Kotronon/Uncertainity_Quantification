@@ -41,8 +41,9 @@ if __name__ == "__main__":
     # variance using both implementations and report the results.
     # ====================================================================
     arr = load_grades(filename="./data/G.txt")
-    mean1, var1 = python_compute(arr)
-    mean2, var2 = numpy_compute(arr)
-    print(mean1, var1)
-    print(mean2, var2)
+    mean_py, var_py = python_compute(arr)
+    mean_np, var_np = numpy_compute(arr)
+    
+    print(f"\nMean Computation\nPython Result: {mean_py}\nNumpy Result:  {mean_np}\nResults Equal? {mean_py == mean_np}")
+    print(f"\nVariance Computation\nPython Result: {var_py}\nNumpy Result:  {var_np}\nResults Equal? {var_py == var_np}")
     # ====================================================================
