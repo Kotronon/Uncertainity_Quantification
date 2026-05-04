@@ -25,9 +25,14 @@ def monte_carlo(
     # distributions (see include_axis_dim parameter of
     # cp.Distribution.sample).
     # ====================================================================
-    mean, rmse = np.zeros(1), np.zeros(1)
+    samples = p.sample(n_samples, rule=rule, seed=seed)
+    if transform is not None:
+        samples = transform(samples)
+    f_values = f(samples)
+    mean = np.mean(f_values)
+    rmse = np.std(f_values, ddof=1) / np.sqrt(n_samples)
     # ====================================================================
-    return mean, rmse
+    return np.array([mean]), np.array([rmse])
 
 
 def control_variates(
