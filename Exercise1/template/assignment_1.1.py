@@ -31,7 +31,7 @@ def numpy_compute(array: npt.NDArray, ddof: int = 0) -> tuple[float, float]:
     # TODO: compute the mean and the variance using numpy.
     # ====================================================================
     mean = np.mean(array)
-    var = np.var(array, ddof=1)
+    var = np.var(array, ddof=ddof)
     # ====================================================================
     return mean, var
 
@@ -42,8 +42,8 @@ if __name__ == "__main__":
     # ====================================================================
     arr = load_grades(filename="./data/G.txt")
     mean_py, var_py = python_compute(arr)
-    mean_np, var_np = numpy_compute(arr)
-    
+    mean_np, var_np = numpy_compute(arr, ddof=1)
+
     print(f"\nMean Computation\nPython Result: {mean_py}\nNumpy Result:  {mean_np}\nResults Equal? {mean_py == mean_np}")
     print(f"\nVariance Computation\nPython Result: {var_py}\nNumpy Result:  {var_np}\nResults Equal? {var_py == var_np}")
     # ====================================================================
