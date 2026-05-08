@@ -47,9 +47,24 @@ def control_variates(
     # approximation. Make sure the function works for both 1-dimensional
     # and n-dimensional distributions.
     # ====================================================================
-    mean = np.zeros(1)
-    # ====================================================================
-    return mean
+    samples = p.sample(n_samples, seed=seed)
+
+    f_values = f(samples)
+    phi_values = phi(samples)
+
+    f_bar = np.mean(f_values)
+    phi_bar = np.mean(phi_values)
+
+    # np.cov returns a covariance matrix: [[Var(f), Cov(f, phi)], [Cov(phi, f), Var(phi)]]
+    cov_matrix = np.cov(f_values, phi_values)
+    covariance_f_phi = cov_matrix[0, 1]
+    variance_phi = cov_matrix[1, 1]
+    
+    c_star = covariance_f_phi / variance_phi if variance_phi != 0 else 0
+
+    mean_cv = f_bar - c_star * (phi_bar - control_mean)
+
+    return np.atleast_1d(mean_cv)
 
 
 def importance_sampling(
@@ -63,6 +78,15 @@ def importance_sampling(
     # approximation. Make sure the function works for both 1-dimensional
     # and n-dimensional distributions.
     # ====================================================================
-    mean = np.zeros(1)
-    # ====================================================================
-    return mean
+    samples = q.sample(n_samples, seed=seed)
+
+    f_values = f(samples)
+
+    p_pdf = p.pdf(samples)
+    q_pdf = q.pdf(samples)
+    
+    weights = p_pdf / q_pdf
+
+    mean_is = np.mean(f_values * weights)
+
+    return np.atleast_1d(mean_is)

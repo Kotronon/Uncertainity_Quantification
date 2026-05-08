@@ -24,12 +24,16 @@ def run_monte_carlo(Ns: tuple[int, ...], seed: int = 42) -> list[float]:
     # TODO: run the Monte Carlo method and return the absolute error
     # of the estimation.
     # ====================================================================
-    np.random.seed(seed)
+    p = cp.Uniform(0, 1) 
     true_value = analytical_integral()
     errors = []
+    
     for N in Ns:
-        estimate = monte_carlo(f, N)
-        errors.append(abs(estimate - true_value))
+        # monte_carlo returns (mean_array, rmse_array)
+        estimate, _ = monte_carlo(p, N, f, seed=seed)
+        # Convert estimate[0] to float to calculate error
+        errors.append(float(abs(estimate[0] - true_value)))
+        
     return errors
     # ====================================================================
 
@@ -40,33 +44,29 @@ def run_control_variates(
     # TODO: run the control variate method for and return the absolute
     # errors of the resulting estimations.
     # ====================================================================
-    np.random.seed(seed)
 
+    p = cp.Uniform(0, 1)
     true_value = analytical_integral()
 
-    # control variates
+    # Control variates functions
     h1 = lambda x: x
     h2 = lambda x: 1 + x
     h3 = lambda x: 1 + x + x**2 / 2
 
-    # exact expectations on [0,1]
-    Eh1 = 0.5
-    Eh2 = 1.5
-    Eh3 = 1 + 0.5 + 1 / 6
+    # Exact expectations
+    Eh1, Eh2, Eh3 = 0.5, 1.5, (1 + 0.5 + 1/6)
 
-    errors_h1 = []
-    errors_h2 = []
-    errors_h3 = []
+    errors_h1, errors_h2, errors_h3 = [], [], []
 
     for N in Ns:
+        # Match function signature: (p, n_samples, f, phi, control_mean, seed)
+        est1 = control_variates(p, N, f, h1, Eh1, seed=seed)
+        est2 = control_variates(p, N, f, h2, Eh2, seed=seed)
+        est3 = control_variates(p, N, f, h3, Eh3, seed=seed)
 
-        est1 = control_variates(f, h1, Eh1, N)
-        est2 = control_variates(f, h2, Eh2, N)
-        est3 = control_variates(f, h3, Eh3, N)
-
-        errors_h1.append(abs(est1 - true_value))
-        errors_h2.append(abs(est2 - true_value))
-        errors_h3.append(abs(est3 - true_value))
+        errors_h1.append(float(abs(est1[0] - true_value)))
+        errors_h2.append(float(abs(est2[0] - true_value)))
+        errors_h3.append(float(abs(est3[0] - true_value)))
 
     return errors_h1, errors_h2, errors_h3
     # ====================================================================
@@ -75,26 +75,22 @@ def run_control_variates(
 def run_importance_sampling(
     Ns: tuple[int, ...], seed: int = 42
 ):
-    np.random.seed(seed)
 
+    p = cp.Uniform(0, 1) # The original target distribution
     true_value = analytical_integral()
 
     errors_beta_51 = []
     errors_beta_half = []
 
-    # Beta(5,1)
     dist1 = cp.Beta(5, 1)
-
-    # Beta(0.5,0.5)
     dist2 = cp.Beta(0.5, 0.5)
 
     for N in Ns:
+        est1 = importance_sampling(p, dist1, N, f, seed=seed)
+        est2 = importance_sampling(p, dist2, N, f, seed=seed)
 
-        est1 = importance_sampling(f, dist1, N)
-        est2 = importance_sampling(f, dist2, N)
-
-        errors_beta_51.append(abs(est1 - true_value))
-        errors_beta_half.append(abs(est2 - true_value))
+        errors_beta_51.append(float(abs(est1[0] - true_value)))
+        errors_beta_half.append(float(abs(est2[0] - true_value)))
 
     return errors_beta_51, errors_beta_half
     # ====================================================================
