@@ -1,5 +1,6 @@
 # gitignore for python from https://github.com/github/gitignore/blob/main/Python.gitignore
 .DS_Store
+*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
