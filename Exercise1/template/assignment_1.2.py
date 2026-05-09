@@ -11,6 +11,7 @@ def sample_normal(
 ) -> npt.NDArray:
     # TODO: generate samples from multivariate normal distribution.
     # ====================================================================
+    np.random.seed(seed)
     samples = np.random.multivariate_normal(mu_target, V_target, size=n_samples).T
     # ====================================================================
     return samples
@@ -79,15 +80,19 @@ if __name__ == "__main__":
     # ====================================================================
     plt.figure()
 
+    # reference line 1/sqrt(N)
+    ref = 1 / np.sqrt(sample_sizes)
+
+    plt.loglog(sample_sizes, ref, '--', label=r'$1/\sqrt{N}$')
     plt.loglog(sample_sizes, mean_error, 'o-', label='abs mean error')
     plt.loglog(sample_sizes, covariances_diagonal_error, 'o-', label='abs diagonal covariances error')
     plt.loglog(sample_sizes, covariances_off_diagonal_error, 'o-', label='abs off-diagonal covariances error')
     plt.loglog(sample_sizes, rmses, 'o-', label='RMSE')
 
-    plt.xlabel('Number of samples (N)')
-    plt.ylabel('Error')
-    plt.title('Error vs Sample Size (log-log)')
-    plt.legend()
+    plt.xlabel('Number of samples (N)', fontsize=20)
+    plt.ylabel('Error', fontsize=20)
+    plt.title('Error vs Sample Size (log-log)', fontsize=24)
+    plt.legend(fontsize=20)
     plt.grid(True, which="both", ls="--")
 
     plt.show()
