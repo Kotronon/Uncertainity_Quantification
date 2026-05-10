@@ -134,7 +134,6 @@ if __name__ == "__main__":
     # TODO: define the parameters of the simulations.
     # ====================================================================
     c, k, f, y_0, y_1 = 0.5, 2.0, 0.5, 0.5, 0.0
-    mc_dist_omega = cp.Uniform(lower=0.95, upper=1.05)
     delta_t = 0.01
     t_grid = np.arange(0, 10 + delta_t, delta_t)
 
@@ -147,6 +146,8 @@ if __name__ == "__main__":
     init_cond = {}
     init_cond['y_0'] = y_0
     init_cond['y_1'] = y_1
+
+    mc_dist_omega = cp.Uniform(lower=0.95, upper=1.05)
 
     seed = 42
     recompute = True
@@ -195,7 +196,8 @@ if __name__ == "__main__":
     plt.loglog(N, var_error_halton, 'o-', label='relative variance error Quasi Monte Carlo (Halton)')
     
     plt.xlabel("Number of Samples (N)", fontsize=20)
-    plt.ylabel("Relative Error")
+    plt.ylabel("Relative Error", fontsize=20)
+    plt.title("Relative Errors Compared to Reference (loglog)", fontsize=22)
     plt.legend(fontsize=20)
     plt.grid(True, which="both")
     plt.show()
@@ -206,11 +208,11 @@ if __name__ == "__main__":
     for i in range(mc_solutions[0].shape[0]):
         plt.plot(t_grid, mc_solutions[0][i], label=f"Trajectory {i}")
     
-    plt.xlabel("Time t")
-    plt.ylabel("Height y")
-    plt.title("10 Trajectories")
+    plt.xlabel("Time t", fontsize=20)
+    plt.ylabel("Height y", fontsize=20)
+    plt.title("10 Trajectories", fontsize=22)
     plt.grid(True)
-    plt.legend()
+    plt.legend(fontsize=20)
 
     plt.show()
     # ====================================================================
