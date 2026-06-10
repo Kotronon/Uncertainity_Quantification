@@ -20,7 +20,7 @@ if __name__ == "__main__":
         results,
         cmap="inferno",
         norm=SymLogNorm(
-            linthresh=1e-12,  # linear region around zero
+            linthresh=1e-12,
             vmin=results.min(),
             vmax=results.max(),
         )
@@ -37,8 +37,6 @@ if __name__ == "__main__":
                 color="white"
             )
 
+    fig.tight_layout()
     fig.colorbar(im, ax=ax)
     plt.show()
-
-
-        
