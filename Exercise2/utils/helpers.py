@@ -8,10 +8,15 @@ from utils.oscillator import Oscillator
 def generate_grid(
     bounds: tuple[float, float], n_nodes: int, grid_type: str = "uniform"
 ) -> npt.NDArray:
-    # TODO: generate the interpoliation grid on [low, high] with n_nodes points.
-    # You may reuse code from previous exercises.
     # ====================================================================
-    grid = np.zeros(n_nodes)
+    lower, upper = bounds
+    if grid_type == "uniform":
+        grid = np.linspace(lower, upper, n_nodes)
+    elif grid_type == "chebyshev":
+        roots, _ = sp.roots_chebyt(n_nodes)
+        grid = 0.5 * (lower + upper) + 0.5 * (upper - lower) * roots
+    else:
+        raise ValueError(f"Unknown grid type: {grid_type}")
     # ====================================================================
     return grid
 
@@ -19,20 +24,16 @@ def generate_grid(
 def compute_errors(
     samples: npt.NDArray, mean_ref: float, var_ref: float
 ) -> tuple[float, float]:
-    # TODO: compute the relative errors of the mean and variance
-    # estimates.
-    # You may reuse code from previous exercises.
     # ====================================================================
-    mean_error, var_error = 0.0, 0.0
+    mean_error = abs(1.0 - np.mean(samples) / mean_ref)
+    var_error = abs(1.0 - np.var(samples, ddof=1) / var_ref)
     # ====================================================================
     return mean_error, var_error
 
 
 def load_reference(filename: str) -> tuple[float, float]:
-    # TODO: load reference values for the mean and variance.
-    # You may reuse code from previous exercises.
     # ====================================================================
-    mean, var = 0.0, 0.0
+    mean, var = np.loadtxt(filename)
     # ====================================================================
     return mean, var
 
@@ -43,9 +44,13 @@ def simulate(
     model_kwargs: dict[str, float],
     init_cond: dict[str, float],
 ) -> npt.NDArray:
-    # TODO: simulate the oscillator with the given parameters and return
-    # generated solutions.
     # ====================================================================
-    sample_solutions = np.zeros_like(t_grid)
+    omega_samples = np.asarray(omega_samples).reshape(-1)
+    sample_solutions = np.empty((omega_samples.size, t_grid.size))
+    for index, omega in enumerate(omega_samples):
+        oscillator = Oscillator(omega=float(omega), **model_kwargs)
+        sample_solutions[index] = oscillator.discretize(
+            method="odeint", t_grid=t_grid, **init_cond
+        )
     # ====================================================================
     return sample_solutions
