@@ -24,33 +24,23 @@ def compute_coefficients(
     """
     # 1. Run the forward model simulation at the quadrature nodes
     t_grid = np.array([0.0, target_t])
-    # simulate returns shape (num_nodes, t_grid.size)
     sim_outputs = simulate(t_grid, nodes, model_kwargs, init_cond)
-    # Extract the solution at target_t (t = 10), which is the second index
     y_at_T = sim_outputs[:, 1]
 
     if mode == "manual":
-        # Eq (6) manual integration: c_i = \sum_{k} y(t, \omega_k) * \phi_i(\omega_k) * w_k / <\phi_i, \phi_i>
-        # Since polynomials are orthogonal, inner product <\phi_i, \phi_i> is equal to E[\phi_i^2]
-        # For chaospy orthogonal polynomials, cp.E(polynomials**2, dist) gives these norms.
-        
-        # Alternatively, using the discrete nodes/weights for the inner product normalization:
         # Expected value of polynomials squared:
         norms = np.array([np.sum((p(nodes)**2) * weights) for p in polynomials])
         
         coefficients = np.zeros(len(polynomials))
         for i, poly in enumerate(polynomials):
-            # Evaluate polynomial i at all nodes
             poly_eval = poly(nodes)
-            # Quadrature sum
             numerator = np.sum(y_at_T * poly_eval * weights)
             coefficients[i] = numerator / norms[i]
 
     elif mode == "chaospy":
-        # Use chaospy's built-in fit capability
-        # fit_quadrature expects expansion, nodes, weights, and model evaluations
-        # standard chaospy.fit_quadrature takes (expansion, nodes, weights, evaluations)
-        coefficients = cp.fit_quadrature(polynomials, nodes, weights, y_at_T)
+        # FIX: retall=1 returns a tuple: (fitted_polynomial, fourier_coefficients)
+        # We use a throwaway variable '_' for the model and capture the true coefficients array.
+        _, coefficients = cp.fit_quadrature(polynomials, nodes, weights, y_at_T, retall=1)
         
     else:
         raise ValueError(f"Unknown mode: {mode}")
