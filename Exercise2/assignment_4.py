@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     for N in degrees:
         # Generate orthogonal polynomials up to degree N
-        polynomials = cp.expansion.stieltjes(N, omega_dist)
+        polynomials = cp.generate_expansion(N, omega_dist)
         
         # Generate Gaussian quadrature nodes and weights
         nodes, weights = cp.generate_quadrature(N, omega_dist, rule="gaussian")
