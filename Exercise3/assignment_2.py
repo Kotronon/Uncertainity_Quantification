@@ -8,15 +8,15 @@ import numpy.typing as npt
 def exp_cov_fn(x: npt.NDArray, y: npt.NDArray, scale: float) -> npt.NDArray:
     """Computes the exponential covariance function between two sets of points."""
 
-    # TODO: compute the exponential covariance function.
-    return np.zeros((x.shape[0], y.shape[0]))
+    dists = np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
+    return np.exp(-dists / scale)
 
 
 def squared_exp_cov_fn(x: npt.NDArray, y: npt.NDArray, scale: npt.NDArray):
     """Computes the squared exponential covariance function between two sets of points."""
 
-    # TODO: compute the squared exponential covariance function.
-    return np.zeros((x.shape[0], y.shape[0]))
+    dists = np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
+    return np.exp(-(dists**2) / (2 * scale**2))
 
 
 def get_xy_mesh(
@@ -37,8 +37,36 @@ def get_xy_mesh(
 def sample(mesh, mean_fn, cov_fn, n_samples, rng, reg_scale=1e-7):
     """Samples from a Gaussian process defined by the mean and covariance functions."""
 
-    # TODO: sample a Gaussian field suing the Cholesky decomposition.
-    return np.zeros((n_samples, *mesh.shape[:-1]))
+    # Flatten the 2D mesh into an array of coordinates: shape (N^2, 2)
+    pts = mesh.reshape(-1, 2)
+    n_points = pts.shape[0]
+    
+    # Evaluate the mean function
+    if callable(mean_fn):
+        m = mean_fn(pts)
+    else:
+        m = np.full(n_points, mean_fn)
+        
+    # Evaluate the covariance matrix: shape (N^2, N^2)
+    K = cov_fn(pts, pts)
+    
+    # Add a small nugget term to the diagonal for numerical stability (strictly positive definite)
+    K += reg_scale * np.eye(n_points)
+    
+    # Perform Cholesky decomposition: K = L @ L.T
+    L = np.linalg.cholesky(K)
+    
+    # Sample standard normal vectors: shape (n_points, n_samples)
+    psi = rng.normal(size=(n_points, n_samples))
+    
+    # Compute Gaussian field realizations: m + L @ psi
+    samples_flat = m[:, None] + L @ psi
+    
+    # Reshape back to grid format: (n_samples, y_mesh_size, x_mesh_size)
+    y_mesh_size, x_mesh_size = mesh.shape[0], mesh.shape[1]
+    samples = samples_flat.T.reshape(n_samples, y_mesh_size, x_mesh_size)
+    
+    return samples
 
 
 def plot_samples(samples, x_lims, y_lims):
@@ -51,17 +79,29 @@ def plot_samples(samples, x_lims, y_lims):
 
 
 if __name__ == "__main__":
-    # TODO: set the condiguration.
-    x_lims, y_lims = [None, None], [None, None]
-    x_mesh_size, y_mesh_size = None, None
-    scale = None
-    mean = None
-    seed = None
-    n_samples = None
+    
+    # Configuration setup
+    x_lims, y_lims = [0.0, 1.0], [0.0, 1.0]
+    x_mesh_size, y_mesh_size = 30, 30  # Results in an N^2 = 900 point grid
+    scale = 0.2                       # Length-scale parameter 'l'
+    mean = 0.1                        # Constant mean function
+    seed = 42
+    n_samples = 3
     rng = np.random.default_rng(seed)
 
-    # TODO: create a 2D mesh.
+    # Create the 2D mesh
+    mesh = get_xy_mesh(x_lims, y_lims, x_mesh_size, y_mesh_size)
 
-    # TODO: sample from the Gaussian process with different kernels.
+    # Sample from the Gaussian process with different kernels
+    # Wrap covariance functions using a lambda to pass the length-scale 'l'
+    samples_exp = sample(mesh, mean, lambda x, y: exp_cov_fn(x, y, scale), n_samples, rng)
+    samples_sq_exp = sample(mesh, mean, lambda x, y: squared_exp_cov_fn(x, y, scale), n_samples, rng)
 
-    # TODO: plot the samples.
+    # Plot the samples
+    fig_exp = plot_samples(samples_exp, x_lims, y_lims)
+    fig_exp.suptitle("Exponential Covariance Function Samples ($C_1$)")
+    
+    fig_sq_exp = plot_samples(samples_sq_exp, x_lims, y_lims)
+    fig_sq_exp.suptitle("Squared Exponential Covariance Function Samples ($C_2$)")
+    
+    plt.show()
