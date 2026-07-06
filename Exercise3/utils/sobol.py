@@ -14,19 +14,7 @@ def _evaluate_oscillator(
     return np.zeros((samples.shape[0], 1))
 
 
-def monte_carlo_sobol(
-    n_samples: int,
-    distribution: cp.Distribution,
-    t_grid: npt.NDArray[np.float64],
-    fixed_args: dict[str, float],
-) -> tuple[float, float]:
-    """Computes the Sobol' indices using Monte Carlo sampling."""
-    
-    # TODO: implement the algorithm from the paper.
-    return 0, 0
-
-
-def simulate_all(t_grid, nodes, fixed_args, method='odeint'):
+def simulate_all(t_grid, nodes, fixed_args):
     # dists = [c_uniform, k_uniform, f_uniform, y0_uniform, y1_uniform]
     solutions = np.zeros(nodes.shape[1])
     for i in range(nodes.shape[1]):
@@ -36,7 +24,8 @@ def simulate_all(t_grid, nodes, fixed_args, method='odeint'):
         y0 = nodes[3, i]
         y1 = nodes[4, i]
 
-        omega = fixed_args['omega']
+        omega  = fixed_args['omega']
+        method = fixed_args['method']
 
         osc = Oscillator(c, k, f, omega)
 
@@ -45,6 +34,48 @@ def simulate_all(t_grid, nodes, fixed_args, method='odeint'):
         solutions[i] = y_final
     
     return solutions
+
+
+def monte_carlo_sobol(
+    n_samples: int,
+    distribution: cp.Distribution,
+    t_grid: npt.NDArray[np.float64],
+    fixed_args: dict[str, float],
+) -> tuple[float, float]:
+    """Computes the Sobol' indices using Monte Carlo sampling."""
+    
+    # TODO: implement the algorithm from the paper.
+    def switch_parameter(A, B, parameter):
+        A_new = A.copy()
+        A_new[parameter, :] = B[parameter, :]
+        return A_new
+
+    A = distribution.sample(n_samples)
+    B = distribution.sample(n_samples)
+
+    n_args = A.shape[0]
+
+    fA = simulate_all(t_grid=t_grid, nodes=A, fixed_args=fixed_args)
+    # here the mean and variance is computed as the average output using sample matrix A (monte carlo)
+    f0 = np.mean(fA) 
+    V = np.var(fA, ddof=1) 
+
+    # choosing method (a) from table 2 to compute S_i
+    sobol = np.zeros(n_args)
+    for i in range(n_args):
+        B_Ai = switch_parameter(A=B, B=A, parameter=i)
+        fB_Ai = simulate_all(t_grid=t_grid, nodes=B_Ai, fixed_args=fixed_args)
+        sobol[i] = (np.mean(fA * fB_Ai) - f0**2) / V
+
+    # choosing method (f) from table 2 to compute S_{Ti}
+    jansen = np.zeros(n_args)
+    for i in range(n_args):
+        A_Bi = switch_parameter(A=A, B=B, parameter=i)
+        fA_Bi = simulate_all(t_grid=t_grid, nodes=A_Bi, fixed_args=fixed_args)
+        diff = fA - fA_Bi
+        jansen[i] = np.mean(diff**2) / (2 * V)
+
+    return sobol, jansen
 
 
 def pseudo_spectral_sobol(
@@ -63,6 +94,8 @@ def pseudo_spectral_sobol(
 
     # quad
     nodes, weights = cp.generate_quadrature(quadrature_degree, distribution)
+
+    # print("n_samples: ", nodes.shape[1], "\n")
 
     # eval
     ys_final = simulate_all(t_grid, nodes, fixed_args)
