@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
@@ -20,20 +22,57 @@ def plot_eigenpairs(
 
 
 if __name__ == "__main__":
-    # TODO: set the configuration.
-    T = None
-    n_points = None
+    # Configuration from the worksheet.
+    T = 1.0
+    n_points = 1000
     t_grid = np.linspace(0, T, n_points)
-    Ms = [None]
-    seed = None
-    n_samples = None
+    Ms = [10, 100, 1000]
+    seed = 42
+    n_samples = 1
     rng = np.random.default_rng(seed)
+    results_dir = Path(__file__).resolve().parent / "results"
+    results_dir.mkdir(exist_ok=True)
 
-    # TODO: generate one realization of the Wiener process using the
-    # standard definition.
+    wiener = WienerProcess(mu=0.0, T=T, n_points=n_points)
 
-    # TODO: generate approximations of the Wiener process using the KL expansion.
+    # Generate one realization of the Wiener process using the standard definition.
+    standard_sample = wiener.generate(n_samples=n_samples, rng=rng)
 
-    # TODO: plot the approximation results.
+    # Generate KL approximations. Reusing the same seed keeps the first KL
+    # coefficients comparable for different truncation levels.
+    kl_samples = {
+        M: wiener.approximate_kl(
+            n_samples=n_samples, M=M, rng=np.random.default_rng(seed)
+        )
+        for M in Ms
+    }
 
-    # TODO: visualize first eigenvalues and eigenfunctions.
+    # Plot approximation results.
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(t_grid, standard_sample[0], label="definition", c="black", lw=1.8)
+    for M, samples in kl_samples.items():
+        ax.plot(t_grid, samples[0], label=f"KL M={M}", lw=1.2)
+    ax.set_title("Wiener process: definition vs. KL approximations")
+    ax.set_xlabel("t")
+    ax.set_ylabel("W(t)")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(results_dir / "assignment_3.1_wiener_kl_comparison.png", dpi=200)
+
+    # Visualize eigenvalues for M=1000.
+    eigenvalues = wiener.kl_eigenvalues(1000)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(np.arange(1, len(eigenvalues) + 1), eigenvalues)
+    ax.set_yscale("log")
+    ax.set_title("First 1000 KL eigenvalues")
+    ax.set_xlabel("m")
+    ax.set_ylabel("lambda_m")
+    fig.tight_layout()
+    fig.savefig(results_dir / "assignment_3.1_eigenvalues.png", dpi=200)
+
+    # Visualize the first eigenfunctions without overplotting all 1000 modes.
+    fig = plot_eigenpairs(wiener, n_terms=5, t_grid=t_grid)
+    fig.tight_layout()
+    fig.savefig(results_dir / "assignment_3.1_first_eigenpairs.png", dpi=200)
+
+    print(f"Saved plots to {results_dir}")
