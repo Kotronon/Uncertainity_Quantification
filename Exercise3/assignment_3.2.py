@@ -58,10 +58,12 @@ def plot_solutions(
 ) -> plt.Figure:
     """Plots the oscillator trajectories for each sample of f."""
     n_plots = len(sampler_solutions)
+    n_cols = 2
+    n_rows = int(np.ceil(n_plots / n_cols))
     fig, axes = plt.subplots(
-        1, n_plots, figsize=(6 * n_plots, 4), sharex=True, sharey=True
+        n_rows, n_cols, figsize=(12, 4.5 * n_rows), sharex=True, sharey=True
     )
-    axes = np.atleast_1d(axes)
+    axes = np.atleast_1d(axes).ravel()
     for ax, (name, solutions) in zip(axes, sampler_solutions.items()):
         mean, std = compute_metrics(solutions)
         ax.plot(t_grid, solutions.T, alpha=0.01, c="b")
@@ -77,6 +79,11 @@ def plot_solutions(
         ax.legend(handles=handles)
 
         ax.set_title(name)
+        ax.set_xlabel("t")
+        ax.set_ylabel("y(t)")
+
+    for ax in axes[n_plots:]:
+        ax.remove()
     return fig
 
 
